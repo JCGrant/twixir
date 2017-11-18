@@ -11,10 +11,11 @@ defmodule Twixir.Mixfile do
   end
 
   def application do
+    [applications: [:exirc]]
     [extra_applications: [:logger]]
   end
 
   defp deps do
-    []
+    [{:exirc, "~> 1.0.1"}]
   end
 end
