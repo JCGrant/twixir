@@ -1,18 +1,20 @@
 defmodule Twixir do
-  @moduledoc """
-  Documentation for Twixir.
-  """
+  use Application
 
-  @doc """
-  Hello world.
+  def start(_type, _args) do
+    import Supervisor.Spec, warn: false
 
-  ## Examples
+    {:ok, client} = ExIrc.start_client!
 
-      iex> Twixir.hello
-      :world
+    channel_name = Application.get_env(:twixir, :chan)
 
-  """
-  def hello do
-    :world
+    children = [
+      worker(ConnectionHandler, [client]),
+      worker(LoginHandler, [client, ["##{channel_name}"]]),
+      worker(TwixirHandler, [client])
+    ]
+
+    opts = [strategy: :one_for_one, name: Twixir.Supervisor]
+    Supervisor.start_link(children, opts)
   end
 end

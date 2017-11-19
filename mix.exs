@@ -11,8 +11,10 @@ defmodule Twixir.Mixfile do
   end
 
   def application do
-    [applications: [:exirc]]
-    [extra_applications: [:logger]]
+    [
+      mod: {Twixir, []},
+      extra_applications: [:logger],
+    ]
   end
 
   defp deps do
