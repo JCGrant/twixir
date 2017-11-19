@@ -19,11 +19,27 @@ defmodule TwixirHandler do
   def handle_info({:received, message, sender, _channel}, _state) do
     from = sender.nick
     debug "#{from}: #{message}"
+    data = parse_message message
+    handle_data data
     {:noreply, nil}
   end
 
   def handle_info(_msg, state) do
     {:noreply, state}
+  end
+
+  def parse_message(message) do
+    case Regex.run(~r/!point\s*\(?(\d),?\s*(\d)\)?/, message) do
+      [_, x, y] -> {:ok, {x, y}}
+      _ -> {:nomatch, nil}
+    end
+  end
+
+  def handle_data({:ok, {x, y}}) do
+    debug "#{x}, #{y}"
+  end
+
+  def handle_data({:nomatch, _}) do
   end
 
   defp debug(msg) do
