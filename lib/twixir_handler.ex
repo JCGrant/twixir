@@ -8,20 +8,23 @@ defmodule TwixirHandler do
 
   def init([client]) do
     ExIrc.Client.add_handler client, self()
-    {:ok, client}
+    {:ok, socket} = :gen_tcp.connect('localhost', 8000, [:binary, active: false])
+    {:ok, [client, socket]}
   end
 
-  def handle_info({:joined, channel}, client) do
+  def handle_info({:joined, channel}, state) do
     debug "Joined #{channel}"
-    {:noreply, client}
+    {:noreply, state}
   end
 
-  def handle_info({:received, message, sender, _channel}, _state) do
+  def handle_info({:received, message, sender, _channel}, state = [_client, socket]) do
     from = sender.nick
     debug "#{from}: #{message}"
-    data = parse_message message
-    handle_data data
-    {:noreply, nil}
+    {ok, data} = parse_message(message)
+    if ok == :ok do
+      send_data(data, socket)
+    end
+    {:noreply, state}
   end
 
   def handle_info(_msg, state) do
@@ -29,17 +32,15 @@ defmodule TwixirHandler do
   end
 
   def parse_message(message) do
-    case Regex.run(~r/!point\s*\(?(\d),?\s*(\d)\)?/, message) do
-      [_, x, y] -> {:ok, {x, y}}
+    case Regex.run(~r/!\s*(\d+)\s*(\d+)\s*(\w+)/, message) do
+      [_, x, y, color] -> {:ok, {x, y, color}}
       _ -> {:nomatch, nil}
     end
   end
 
-  def handle_data({:ok, {x, y}}) do
-    debug "#{x}, #{y}"
-  end
-
-  def handle_data({:nomatch, _}) do
+  def send_data({x, y, color}, socket) do
+    :gen_tcp.send(socket, "#{x} #{y} #{color}\r\n")
+    debug "#{x} #{y} #{color}"
   end
 
   defp debug(msg) do
